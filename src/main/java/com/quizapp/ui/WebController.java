@@ -19,10 +19,7 @@ public class WebController {
     }
 
     public void startServer() throws IOException {
-        // Start server on port 8080
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        
-        // Create an endpoint at "/quiz"
         server.createContext("/quiz", new QuizHandler());
         server.setExecutor(null); 
         server.start();
@@ -35,12 +32,26 @@ public class WebController {
             List<Question> questions = service.getAllQuestions();
             StringBuilder response = new StringBuilder();
             
-            response.append("<html><body><h1>Computer Science Quiz</h1><ul>");
-            for (Question q : questions) {
-                response.append("<li><b>").append(q.getPrompt()).append("</b><br>");
-                response.append("Options: ").append(String.join(", ", q.getOptions())).append("</li><br>");
+            response.append("<html><head><title>QuizApp</title></head><body>");
+            response.append("<h1>Computer Science Quiz</h1>");
+            response.append("<form action='/submit' method='POST'>");
+
+            for (int i = 0; i < questions.size(); i++) {
+                Question q = questions.get(i);
+                response.append("<p><b>").append(i + 1).append(". ").append(q.getPrompt()).append("</b></p>");
+                
+                List<String> options = q.getOptions();
+                char label = 'A';
+                for (int j = 0; j < options.size(); j++) {
+                    response.append("<input type='radio' name='q").append(i)
+                            .append("' value='").append(j).append("'> ")
+                            .append(label).append(") ").append(options.get(j)).append("<br>");
+                    label++;
+                }
             }
-            response.append("</ul></body></html>");
+
+            response.append("<br><input type='submit' value='Submit Quiz'>");
+            response.append("</form></body></html>");
 
             byte[] bytes = response.toString().getBytes();
             exchange.sendResponseHeaders(200, bytes.length);
