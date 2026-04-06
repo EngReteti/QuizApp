@@ -12,7 +12,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WebController {
     private QuestionService service;
@@ -23,18 +24,13 @@ public class WebController {
 
     public void startServer() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        
-        // Context for viewing the quiz
         server.createContext("/quiz", new QuizHandler());
-        // Context for processing results
         server.createContext("/submit", new SubmitHandler());
-        
         server.setExecutor(null); 
         server.start();
         System.out.println("Server live: http://localhost:8080/quiz");
     }
 
-    // Handler to display the questions (Same as yesterday)
     class QuizHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -65,22 +61,39 @@ public class WebController {
         }
     }
 
-    // NEW: Handler to process the submitted answers
     class SubmitHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                // Read the body of the POST request
-                InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
-                BufferedReader br = new BufferedReader(isr);
-                String formData = br.readLine(); // Format: q0=1&q1=2...
+                BufferedReader br = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
+                String formData = br.readLine(); 
+                
+                // Parse the form data (q0=1&q1=2...) into a Map
+                Map<String, String> answers = new HashMap<>();
+                for (String pair : formData.split("&")) {
+                    String[] kv = pair.split("=");
+                    if (kv.length > 1) answers.put(kv[0], kv[1]);
+                }
 
-                // For now, let's just confirm we received the data
-                String response = "<html><body><h1>Quiz Submitted!</h1>" +
-                                  "<p>Data received: " + formData + "</p>" +
-                                  "<a href='/quiz'>Try Again</a></body></html>";
+                List<Question> questions = service.getAllQuestions();
+                int score = 0;
 
-                byte[] bytes = response.getBytes();
+                for (int i = 0; i < questions.size(); i++) {
+                    String userChoiceStr = answers.get("q" + i);
+                    if (userChoiceStr != null) {
+                        int userChoice = Integer.parseInt(userChoiceStr);
+                        if (questions.get(i).isCorrect(userChoice)) {
+                            score++;
+                        }
+                    }
+                }
+
+                String resultPage = "<html><body><h1>Your Results</h1>" +
+                                    "<h2>Score: " + score + " / " + questions.size() + "</h2>" +
+                                    "<p>Percentage: " + (score * 10) + "%</p>" +
+                                    "<a href='/quiz'>Try Again</a></body></html>";
+
+                byte[] bytes = resultPage.getBytes();
                 exchange.sendResponseHeaders(200, bytes.length);
                 OutputStream os = exchange.getResponseBody();
                 os.write(bytes);
