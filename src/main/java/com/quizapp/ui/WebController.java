@@ -68,30 +68,46 @@ public class WebController {
                 BufferedReader br = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
                 String formData = br.readLine(); 
                 
-                // Parse the form data (q0=1&q1=2...) into a Map
                 Map<String, String> answers = new HashMap<>();
-                for (String pair : formData.split("&")) {
-                    String[] kv = pair.split("=");
-                    if (kv.length > 1) answers.put(kv[0], kv[1]);
+                if (formData != null) {
+                    for (String pair : formData.split("&")) {
+                        String[] kv = pair.split("=");
+                        if (kv.length > 1) answers.put(kv[0], kv[1]);
+                    }
                 }
 
                 List<Question> questions = service.getAllQuestions();
                 int score = 0;
+                StringBuilder report = new StringBuilder();
+                report.append("<table border='1'><tr><th>#</th><th>Question</th><th>Result</th></tr>");
 
                 for (int i = 0; i < questions.size(); i++) {
+                    Question q = questions.get(i);
                     String userChoiceStr = answers.get("q" + i);
+                    boolean isCorrect = false;
+                    String status = "<span style='color:red;'>Incorrect</span>";
+
                     if (userChoiceStr != null) {
                         int userChoice = Integer.parseInt(userChoiceStr);
-                        if (questions.get(i).isCorrect(userChoice)) {
+                        if (q.isCorrect(userChoice)) {
                             score++;
+                            isCorrect = true;
+                            status = "<span style='color:green;'>Correct</span>";
                         }
                     }
+
+                    report.append("<tr>")
+                          .append("<td>").append(i + 1).append("</td>")
+                          .append("<td>").append(q.getPrompt()).append("</td>")
+                          .append("<td>").append(status).append("</td>")
+                          .append("</tr>");
                 }
+                report.append("</table>");
 
                 String resultPage = "<html><body><h1>Your Results</h1>" +
-                                    "<h2>Score: " + score + " / " + questions.size() + "</h2>" +
-                                    "<p>Percentage: " + (score * 10) + "%</p>" +
-                                    "<a href='/quiz'>Try Again</a></body></html>";
+                                    "<h2>Final Score: " + score + " / " + questions.size() + "</h2>" +
+                                    report.toString() +
+                                    "<br><a href='/quiz'>Try Again</a></body></html>";
 
                 byte[] bytes = resultPage.getBytes();
                 exchange.sendResponseHeaders(200, bytes.length);
