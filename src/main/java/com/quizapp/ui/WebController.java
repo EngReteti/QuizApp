@@ -18,6 +18,21 @@ import java.util.Map;
 public class WebController {
     private QuestionService service;
 
+    // CSS for a professional look
+    private static final String CSS = 
+        "<style>" +
+        "body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; }" +
+        ".container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; width: 100%; }" +
+        "h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; }" +
+        ".question { margin-bottom: 20px; padding: 15px; border-left: 5px solid #3498db; background: #eef7fd; }" +
+        "input[type='radio'] { margin-right: 10px; }" +
+        "input[type='submit'] { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; margin-top: 20px; }" +
+        "input[type='submit']:hover { background: #2980b9; }" +
+        "table { width: 100%; border-collapse: collapse; margin-top: 20px; }" +
+        "th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }" +
+        "th { background-color: #3498db; color: white; }" +
+        "</style>";
+
     public WebController(QuestionService service) {
         this.service = service;
     }
@@ -36,23 +51,24 @@ public class WebController {
         public void handle(HttpExchange exchange) throws IOException {
             List<Question> questions = service.getAllQuestions();
             StringBuilder response = new StringBuilder();
-            response.append("<html><head><title>QuizApp</title></head><body>");
-            response.append("<h1>Computer Science Quiz</h1>");
+            response.append("<html><head><title>QuizApp</title>").append(CSS).append("</head><body>");
+            response.append("<div class='container'><h1>Computer Science Quiz</h1>");
             response.append("<form action='/submit' method='POST'>");
             for (int i = 0; i < questions.size(); i++) {
                 Question q = questions.get(i);
-                response.append("<p><b>").append(i + 1).append(". ").append(q.getPrompt()).append("</b></p>");
+                response.append("<div class='question'><b>").append(i + 1).append(". ").append(q.getPrompt()).append("</b><br><br>");
                 List<String> options = q.getOptions();
                 char label = 'A';
                 for (int j = 0; j < options.size(); j++) {
-                    response.append("<input type='radio' name='q").append(i)
+                    response.append("<label><input type='radio' name='q").append(i)
                             .append("' value='").append(j).append("'> ")
-                            .append(label).append(") ").append(options.get(j)).append("<br>");
+                            .append(label).append(") ").append(options.get(j)).append("</label><br>");
                     label++;
                 }
+                response.append("</div>");
             }
-            response.append("<br><input type='submit' value='Submit Quiz'>");
-            response.append("</form></body></html>");
+            response.append("<input type='submit' value='Submit Quiz'>");
+            response.append("</form></div></body></html>");
             byte[] bytes = response.toString().getBytes();
             exchange.sendResponseHeaders(200, bytes.length);
             OutputStream os = exchange.getResponseBody();
@@ -67,7 +83,6 @@ public class WebController {
             if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
                 BufferedReader br = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
                 String formData = br.readLine(); 
-                
                 Map<String, String> answers = new HashMap<>();
                 if (formData != null) {
                     for (String pair : formData.split("&")) {
@@ -79,35 +94,24 @@ public class WebController {
                 List<Question> questions = service.getAllQuestions();
                 int score = 0;
                 StringBuilder report = new StringBuilder();
-                report.append("<table border='1'><tr><th>#</th><th>Question</th><th>Result</th></tr>");
+                report.append("<table><tr><th>#</th><th>Question</th><th>Result</th></tr>");
 
                 for (int i = 0; i < questions.size(); i++) {
                     Question q = questions.get(i);
                     String userChoiceStr = answers.get("q" + i);
-                    boolean isCorrect = false;
-                    String status = "<span style='color:red;'>Incorrect</span>";
-
-                    if (userChoiceStr != null) {
-                        int userChoice = Integer.parseInt(userChoiceStr);
-                        if (q.isCorrect(userChoice)) {
-                            score++;
-                            isCorrect = true;
-                            status = "<span style='color:green;'>Correct</span>";
-                        }
+                    String status = "<b style='color:#e74c3c;'>Incorrect</b>";
+                    if (userChoiceStr != null && q.isCorrect(Integer.parseInt(userChoiceStr))) {
+                        score++;
+                        status = "<b style='color:#27ae60;'>Correct</b>";
                     }
-
-                    report.append("<tr>")
-                          .append("<td>").append(i + 1).append("</td>")
-                          .append("<td>").append(q.getPrompt()).append("</td>")
-                          .append("<td>").append(status).append("</td>")
-                          .append("</tr>");
+                    report.append("<tr><td>").append(i + 1).append("</td><td>").append(q.getPrompt()).append("</td><td>").append(status).append("</td></tr>");
                 }
                 report.append("</table>");
 
-                String resultPage = "<html><body><h1>Your Results</h1>" +
-                                    "<h2>Final Score: " + score + " / " + questions.size() + "</h2>" +
+                String resultPage = "<html><head>" + CSS + "</head><body><div class='container'><h1>Results</h1>" +
+                                    "<h2 style='text-align:center;'>Score: " + score + " / " + questions.size() + "</h2>" +
                                     report.toString() +
-                                    "<br><a href='/quiz'>Try Again</a></body></html>";
+                                    "<br><a href='/quiz' style='display:block; text-align:center; color:#3498db; text-decoration:none;'>Try Again</a></div></body></html>";
 
                 byte[] bytes = resultPage.getBytes();
                 exchange.sendResponseHeaders(200, bytes.length);
