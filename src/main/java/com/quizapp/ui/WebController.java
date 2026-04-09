@@ -18,20 +18,36 @@ import java.util.Map;
 public class WebController {
     private QuestionService service;
 
-    // CSS for a professional look
     private static final String CSS = 
         "<style>" +
-        "body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; }" +
-        ".container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; width: 100%; }" +
+        "body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; }" +
+        ".container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; width: 100%; position: relative; }" +
+        "#timer { position: sticky; top: 0; background: #e74c3c; color: white; padding: 10px; text-align: center; font-weight: bold; border-radius: 4px; margin-bottom: 20px; z-index: 100; }" +
         "h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; }" +
         ".question { margin-bottom: 20px; padding: 15px; border-left: 5px solid #3498db; background: #eef7fd; }" +
-        "input[type='radio'] { margin-right: 10px; }" +
-        "input[type='submit'] { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; margin-top: 20px; }" +
-        "input[type='submit']:hover { background: #2980b9; }" +
+        "input[type='submit'] { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }" +
         "table { width: 100%; border-collapse: collapse; margin-top: 20px; }" +
         "th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }" +
         "th { background-color: #3498db; color: white; }" +
         "</style>";
+
+    private static final String JS = 
+        "<script>" +
+        "let timeLeft = 60;" +
+        "function startTimer() {" +
+        "    const timerElement = document.getElementById('timer');" +
+        "    const interval = setInterval(() => {" +
+        "        if (timeLeft <= 0) {" +
+        "            clearInterval(interval);" +
+        "            document.getElementById('quizForm').submit();" +
+        "        } else {" +
+        "            timerElement.innerHTML = 'Time Remaining: ' + timeLeft + 's';" +
+        "        }" +
+        "        timeLeft -= 1;" +
+        "    }, 1000);" +
+        "}" +
+        "window.onload = startTimer;" +
+        "</script>";
 
     public WebController(QuestionService service) {
         this.service = service;
@@ -51,9 +67,11 @@ public class WebController {
         public void handle(HttpExchange exchange) throws IOException {
             List<Question> questions = service.getAllQuestions();
             StringBuilder response = new StringBuilder();
-            response.append("<html><head><title>QuizApp</title>").append(CSS).append("</head><body>");
-            response.append("<div class='container'><h1>Computer Science Quiz</h1>");
-            response.append("<form action='/submit' method='POST'>");
+            response.append("<html><head><title>QuizApp</title>").append(CSS).append(JS).append("</head><body>");
+            response.append("<div class='container'>");
+            response.append("<div id='timer'>Time Remaining: 60s</div>");
+            response.append("<h1>Computer Science Quiz</h1>");
+            response.append("<form id='quizForm' action='/submit' method='POST'>");
             for (int i = 0; i < questions.size(); i++) {
                 Question q = questions.get(i);
                 response.append("<div class='question'><b>").append(i + 1).append(". ").append(q.getPrompt()).append("</b><br><br>");
@@ -95,7 +113,6 @@ public class WebController {
                 int score = 0;
                 StringBuilder report = new StringBuilder();
                 report.append("<table><tr><th>#</th><th>Question</th><th>Result</th></tr>");
-
                 for (int i = 0; i < questions.size(); i++) {
                     Question q = questions.get(i);
                     String userChoiceStr = answers.get("q" + i);
