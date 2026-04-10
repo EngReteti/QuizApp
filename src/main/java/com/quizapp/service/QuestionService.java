@@ -1,15 +1,17 @@
 package com.quizapp.service;
 
 import com.quizapp.model.Question;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Service class to manage and provide quiz questions.
- */
 public class QuestionService {
     private List<Question> questions;
+    private static final String RESULTS_FILE = "results.txt";
 
     public QuestionService() {
         this.questions = new ArrayList<>();
@@ -31,5 +33,17 @@ public class QuestionService {
 
     public List<Question> getAllQuestions() {
         return questions;
+    }
+
+    /**
+     * Persists the quiz result to a local text file.
+     */
+    public void saveResult(int score, int total) {
+        try (FileWriter fw = new FileWriter(RESULTS_FILE, true);
+             PrintWriter out = new PrintWriter(fw)) {
+            out.println(LocalDateTime.now() + " - Score: " + score + "/" + total);
+        } catch (IOException e) {
+            System.err.println("Could not save result: " + e.getMessage());
+        }
     }
 }
