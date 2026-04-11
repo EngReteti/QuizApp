@@ -35,13 +35,10 @@ public class QuestionService {
         return questions;
     }
 
-    /**
-     * Persists the quiz result to a local text file.
-     */
-    public void saveResult(int score, int total) {
+    public void saveResult(String name, int score, int total) {
         try (FileWriter fw = new FileWriter(RESULTS_FILE, true);
              PrintWriter out = new PrintWriter(fw)) {
-            out.println(LocalDateTime.now() + " - Score: " + score + "/" + total);
+            out.println(LocalDateTime.now() + " | Name: " + name + " | Score: " + score + "/" + total);
         } catch (IOException e) {
             System.err.println("Could not save result: " + e.getMessage());
         }
