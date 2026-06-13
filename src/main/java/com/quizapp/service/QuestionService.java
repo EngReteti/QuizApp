@@ -3,9 +3,8 @@ package com.quizapp.service;
 import com.quizapp.model.Question;
 import java.io.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class QuestionService {
     private List<Question> questions;
@@ -22,11 +21,12 @@ public class QuestionService {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length == 3) {
+                if (parts.length == 4) {
                     String prompt = parts[0];
                     List<String> options = Arrays.asList(parts[1].split(","));
                     int correctIndex = Integer.parseInt(parts[2]);
-                    questions.add(new Question(prompt, options, correctIndex));
+                    String category = parts[3];
+                    questions.add(new Question(prompt, options, correctIndex, category));
                 }
             }
         } catch (IOException e) {
@@ -36,6 +36,13 @@ public class QuestionService {
 
     public List<Question> getAllQuestions() {
         return questions;
+    }
+
+    /**
+     * Extracts all unique categories available in the CSV database.
+     */
+    public Set<String> getCategories() {
+        return questions.stream().map(Question::getCategory).collect(Collectors.toSet());
     }
 
     public void saveResult(String name, int score, int total) {
