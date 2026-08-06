@@ -38,9 +38,15 @@ public class QuestionService {
         return questions;
     }
 
-    /**
-     * Extracts all unique categories available in the CSV database.
-     */
+    public List<Question> getQuestionsByCategory(String category) {
+        if (category == null || category.isEmpty() || category.equalsIgnoreCase("All")) {
+            return questions;
+        }
+        return questions.stream()
+                .filter(q -> q.getCategory().equalsIgnoreCase(category))
+                .collect(Collectors.toList());
+    }
+
     public Set<String> getCategories() {
         return questions.stream().map(Question::getCategory).collect(Collectors.toSet());
     }
